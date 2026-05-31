@@ -29,6 +29,30 @@ alternatif gratis yang bisa dijalankan di satu komputer operator tanpa layanan b
 developer lokal, dan komunitas pendidikan bisa memakai, memodifikasi, menerjemahkan, atau menyesuaikan
 alur absensi sesuai kebutuhan masing-masing.
 
+## Download dan Install
+
+Download installer terbaru dari halaman
+[GitHub Releases](https://github.com/ahmadghaisanfad2/absen-kelas/releases/latest).
+
+### Windows
+
+Download file `.exe` atau `.msi`, lalu jalankan installer seperti aplikasi Windows biasa.
+Jika Windows SmartScreen menampilkan peringatan karena aplikasi ini masih baru, pastikan file berasal
+dari halaman release resmi, lalu pilih opsi untuk tetap menjalankan installer.
+
+### macOS
+
+Download file `.dmg`, buka, lalu drag **Absen Kelas.app** ke folder **Applications**.
+
+Catatan penting: build macOS v0.1.x belum ditandatangani dan belum dinotarize oleh Apple karena proyek
+ini masih open source awal dan belum memakai akun Apple Developer berbayar. Karena itu macOS Gatekeeper
+bisa menampilkan pesan seperti **"Absen Kelas" Not Opened** atau **Apple could not verify "Absen Kelas"
+is free of malware**.
+
+Ini bukan berarti GitHub menemukan malware. Peringatan tersebut muncul karena macOS belum bisa
+memverifikasi identitas developer aplikasi. Lihat panduan lengkap di
+[docs/install-macos.md](docs/install-macos.md).
+
 ## Format Import Excel Siswa
 
 Kolom wajib:
