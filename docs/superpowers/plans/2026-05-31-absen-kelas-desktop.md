@@ -79,4 +79,4 @@
 - [x] Run `npm run build`.
 - [x] Run the app in a browser preview or Tauri dev shell.
 - [x] Add GitHub Actions release workflow for Windows/macOS bundles.
-- [ ] Initialize git and commit the first version.
+- [x] Initialize git and commit the first version.
