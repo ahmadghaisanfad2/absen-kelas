@@ -81,8 +81,8 @@ Repo ini sudah menyiapkan GitHub Actions di `.github/workflows/release.yml`.
 Cara release:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 GitHub Actions akan membangun draft release untuk macOS dan Windows.
