@@ -1,3 +1,5 @@
+![Absen Kelas GitHub banner](assets/brand/github-banner.png)
+
 # Absen Kelas
 
 Absen Kelas adalah aplikasi desktop offline untuk membantu tim operasional sekolah atau pesantren
