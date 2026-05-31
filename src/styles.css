@@ -128,6 +128,7 @@ button:disabled {
 .nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   width: 100%;
   min-height: 40px;
@@ -205,6 +206,42 @@ button:disabled {
   font-weight: 700;
 }
 
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.save-status {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 7px;
+  row-gap: 1px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: 0 10px 24px rgba(28, 43, 38, 0.05);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.save-status svg {
+  grid-row: span 2;
+}
+
+.save-status small {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -247,6 +284,42 @@ button:disabled {
   margin: 0 0 8px;
   font-size: 18px;
   line-height: 1.2;
+}
+
+.update-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.update-card [data-slot="badge"] {
+  margin-bottom: 10px;
+  width: fit-content;
+}
+
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.update-meta {
+  margin: 10px 0 0;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.update-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .hero-card,
@@ -384,6 +457,12 @@ select:focus {
   padding-bottom: 10px;
 }
 
+.student-toolbar {
+  display: grid;
+  grid-template-columns: minmax(210px, 260px) minmax(230px, 320px) minmax(160px, 1fr);
+  align-items: end;
+}
+
 .attendance-table-wrap,
 .data-table-wrap {
   overflow: auto;
@@ -411,6 +490,63 @@ select:focus {
   color: #536274;
   font-size: 12px;
   font-weight: 800;
+}
+
+.student-table-card {
+  overflow: hidden;
+}
+
+.student-data-table th,
+.student-data-table td {
+  padding: 12px 14px;
+}
+
+.student-data-table tbody tr:hover {
+  background: #fbfdfc;
+}
+
+.number-col,
+.number-cell {
+  width: 68px;
+  text-align: center !important;
+}
+
+.number-cell {
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.student-name-cell strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.note-cell {
+  max-width: 340px;
+  color: var(--app-muted);
+}
+
+.order-col {
+  width: 112px;
+}
+
+.action-col {
+  width: 70px;
+}
+
+.order-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.table-helper {
+  margin: 0;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: #fbfdfc;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .sticky-col {
@@ -694,9 +830,27 @@ thead .sticky-col {
   .toolbar-card,
   .hero-card,
   .danger-zone,
-  .section-title-row {
+  .section-title-row,
+  .page-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .page-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .update-card {
+    grid-template-columns: 1fr;
+  }
+
+  .update-actions {
+    justify-content: flex-start;
+  }
+
+  .student-toolbar {
+    grid-template-columns: 1fr;
   }
 }
 

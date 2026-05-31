@@ -15,6 +15,8 @@ export function loadAppData(): AppData {
     return {
       ...seedData,
       ...parsed,
+      studentOrderByClass: parsed.studentOrderByClass ?? {},
+      studentSortModeByClass: parsed.studentSortModeByClass ?? {},
       attendance: parsed.attendance ?? {}
     };
   } catch {
@@ -56,5 +58,11 @@ export function parseBackupPayload(payload: string): AppData {
     throw new Error("File backup tidak dikenali sebagai data Absen Kelas.");
   }
 
-  return parsed.data;
+  return {
+    ...seedData,
+    ...parsed.data,
+    studentOrderByClass: parsed.data.studentOrderByClass ?? {},
+    studentSortModeByClass: parsed.data.studentSortModeByClass ?? {},
+    attendance: parsed.data.attendance ?? {}
+  };
 }

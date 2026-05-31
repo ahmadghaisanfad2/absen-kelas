@@ -9,12 +9,20 @@ export const seedData: AppData = {
     { id: "class_2a", name: "Kelas 2A", description: "Contoh kelas awal" }
   ],
   students: [
-    { id: "student_ahmad", name: "Ahmad Fauzan", classId: "class_1a", nis: "1001" },
-    { id: "student_aisyah", name: "Aisyah Rahma", classId: "class_1a", nis: "1002" },
-    { id: "student_bilal", name: "Bilal Hannan", classId: "class_1a", nis: "1003" },
-    { id: "student_nadia", name: "Nadia Zahra", classId: "class_2a", nis: "2001" },
-    { id: "student_zaki", name: "Zaki Mubarak", classId: "class_2a", nis: "2002" }
+    { id: "student_ahmad", name: "Ahmad Fauzan", classId: "class_1a", nis: "1001", gender: "Laki-laki" },
+    { id: "student_aisyah", name: "Aisyah Rahma", classId: "class_1a", nis: "1002", gender: "Perempuan" },
+    { id: "student_bilal", name: "Bilal Hannan", classId: "class_1a", nis: "1003", gender: "Laki-laki" },
+    { id: "student_nadia", name: "Nadia Zahra", classId: "class_2a", nis: "2001", gender: "Perempuan" },
+    { id: "student_zaki", name: "Zaki Mubarak", classId: "class_2a", nis: "2002", gender: "Laki-laki" }
   ],
+  studentOrderByClass: {
+    class_1a: ["student_ahmad", "student_aisyah", "student_bilal"],
+    class_2a: ["student_nadia", "student_zaki"]
+  },
+  studentSortModeByClass: {
+    class_1a: "az",
+    class_2a: "az"
+  },
   schedulePatterns: [
     {
       id: "schedule_regular",

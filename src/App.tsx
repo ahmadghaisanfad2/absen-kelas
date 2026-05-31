@@ -4,10 +4,14 @@ import {
   ClipboardList,
   DatabaseBackup,
   Download,
+  ExternalLink,
   FileSpreadsheet,
   GraduationCap,
+  ArrowDown,
+  ArrowUp,
   LayoutDashboard,
   Plus,
+  RefreshCw,
   RotateCcw,
   Save,
   Settings,
@@ -16,6 +20,7 @@ import {
   Users
 } from "lucide-react";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import packageJson from "../package.json";
 import appLogoUrl from "./assets/app-logo-ui.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,10 +56,26 @@ import {
 import { makeId } from "./lib/ids";
 import { ATTENDANCE_STATUS_OPTIONS, statusLabel } from "./lib/status";
 import { createBackupPayload, loadAppData, parseBackupPayload, resetAppData, saveAppData } from "./lib/storage";
-import type { AppData, AttendanceStatus, ClassGroup, LessonSlot, SchedulePattern } from "./lib/types";
+import type { AppData, AttendanceStatus, ClassGroup, LessonSlot, SchedulePattern, Student, StudentSortMode } from "./lib/types";
 
 type ViewKey = "dashboard" | "attendance" | "students" | "classes" | "schedules" | "exports" | "settings";
 type ToastKind = "success" | "error" | "info";
+type SaveStatus = "saving" | "saved";
+type UpdateCheckStatus = "idle" | "checking" | "available" | "current" | "error";
+type GithubReleaseAsset = { name: string; browser_download_url: string };
+type GithubRelease = {
+  tag_name: string;
+  html_url: string;
+  name?: string;
+  published_at?: string;
+  assets: GithubReleaseAsset[];
+};
+type UpdateState = {
+  status: UpdateCheckStatus;
+  message: string;
+  release?: GithubRelease;
+  asset?: GithubReleaseAsset;
+};
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -66,6 +87,9 @@ const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboar
   { key: "settings", label: "Pengaturan", icon: Settings }
 ];
 
+const GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/ahmadghaisanfad2/absen-kelas/releases/latest";
+const CURRENT_APP_VERSION = packageJson.version;
+
 function downloadTextFile(fileName: string, content: string) {
   const blob = new Blob([content], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -74,6 +98,97 @@ function downloadTextFile(fileName: string, content: string) {
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function normalizeGender(value?: string) {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  if (["l", "lk", "laki", "laki-laki", "putra", "ikhwan", "male"].includes(normalized)) return "male";
+  if (["p", "pr", "perempuan", "putri", "akhwat", "female"].includes(normalized)) return "female";
+  return "unknown";
+}
+
+function compareStudentsByName(first: Student, second: Student) {
+  return first.name.localeCompare(second.name, "id-ID");
+}
+
+function sortStudentsForView(students: Student[], mode: StudentSortMode, customOrder: string[]) {
+  if (mode === "custom") {
+    const rank = new Map(customOrder.map((id, index) => [id, index]));
+    return [...students].sort((first, second) => {
+      const firstRank = rank.get(first.id) ?? Number.MAX_SAFE_INTEGER;
+      const secondRank = rank.get(second.id) ?? Number.MAX_SAFE_INTEGER;
+      if (firstRank !== secondRank) return firstRank - secondRank;
+      return compareStudentsByName(first, second);
+    });
+  }
+
+  if (mode === "male-first" || mode === "female-first") {
+    const preferred = mode === "male-first" ? "male" : "female";
+    const secondary = mode === "male-first" ? "female" : "male";
+    const rankGender = (student: Student) => {
+      const gender = normalizeGender(student.gender);
+      if (gender === preferred) return 0;
+      if (gender === secondary) return 1;
+      return 2;
+    };
+
+    return [...students].sort((first, second) => {
+      const genderDiff = rankGender(first) - rankGender(second);
+      return genderDiff || compareStudentsByName(first, second);
+    });
+  }
+
+  return [...students].sort(compareStudentsByName);
+}
+
+function normalizeVersion(version: string) {
+  return version.trim().replace(/^v/i, "").split("-")[0];
+}
+
+function compareVersions(firstVersion: string, secondVersion: string) {
+  const first = normalizeVersion(firstVersion).split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const second = normalizeVersion(secondVersion).split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const length = Math.max(first.length, second.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const diff = (first[index] ?? 0) - (second[index] ?? 0);
+    if (diff !== 0) return diff;
+  }
+
+  return 0;
+}
+
+function formatSavedTime(value: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date(value));
+}
+
+function selectInstallerAsset(assets: GithubReleaseAsset[]) {
+  const platform = navigator.platform.toLowerCase();
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMac = platform.includes("mac") || userAgent.includes("mac os");
+  const isWindows = platform.includes("win") || userAgent.includes("windows");
+
+  if (isMac) {
+    return assets.find((asset) => asset.name.endsWith(".dmg")) ?? assets.find((asset) => asset.name.includes(".app"));
+  }
+
+  if (isWindows) {
+    return (
+      assets.find((asset) => asset.name.endsWith("-setup.exe")) ??
+      assets.find((asset) => asset.name.endsWith(".exe")) ??
+      assets.find((asset) => asset.name.endsWith(".msi"))
+    );
+  }
+
+  return assets.find((asset) => asset.name.endsWith(".dmg") || asset.name.endsWith(".exe") || asset.name.endsWith(".msi"));
+}
+
+function openExternalDownload(url: string) {
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 function App() {
@@ -87,9 +202,24 @@ function App() {
   const [scheduleName, setScheduleName] = useState("");
   const [importMessage, setImportMessage] = useState("");
   const [exportClassIds, setExportClassIds] = useState<string[]>(() => data.classes.map((item) => item.id));
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const [lastSavedAt, setLastSavedAt] = useState(data.updatedAt);
+  const [updateState, setUpdateState] = useState<UpdateState>({
+    status: "idle",
+    message: "Cek release terbaru dari GitHub saat perangkat terhubung internet."
+  });
 
   useEffect(() => {
+    const savedAt = new Date().toISOString();
+    setSaveStatus("saving");
     saveAppData(data);
+    setLastSavedAt(savedAt);
+
+    const timer = window.setTimeout(() => {
+      setSaveStatus("saved");
+    }, 220);
+
+    return () => window.clearTimeout(timer);
   }, [data]);
 
   useEffect(() => {
@@ -109,9 +239,19 @@ function App() {
   const selectedClass = data.classes.find((item) => item.id === selectedClassId) ?? data.classes[0];
   const selectedSchedule =
     data.schedulePatterns.find((item) => item.id === selectedScheduleId) ?? data.schedulePatterns[0];
+  const studentSortMode = (data.studentSortModeByClass[selectedClass?.id ?? ""] ?? "az") as StudentSortMode;
   const selectedStudents = useMemo(
     () => studentsForClass(data.students, selectedClass?.id ?? ""),
     [data.students, selectedClass?.id]
+  );
+  const displayedStudents = useMemo(
+    () =>
+      sortStudentsForView(
+        selectedStudents,
+        studentSortMode,
+        data.studentOrderByClass[selectedClass?.id ?? ""] ?? []
+      ),
+    [data.studentOrderByClass, selectedClass?.id, selectedStudents, studentSortMode]
   );
   const monthlyRows = useMemo(
     () => buildMonthlyRows(data, monthKeyFromDate(selectedDate), selectedClass?.id ?? ""),
@@ -128,6 +268,18 @@ function App() {
 
   function updateData(nextData: AppData) {
     setData(nextData);
+  }
+
+  function handleSaveNow() {
+    const savedAt = new Date().toISOString();
+    setSaveStatus("saving");
+    saveAppData(data);
+    setLastSavedAt(savedAt);
+
+    window.setTimeout(() => {
+      setSaveStatus("saved");
+    }, 220);
+    notify("Semua data dan pengaturan sudah tersimpan di perangkat ini.");
   }
 
   function notify(message: string, kind: ToastKind = "success") {
@@ -246,6 +398,41 @@ function App() {
     );
   }
 
+  function updateStudentSortMode(mode: StudentSortMode) {
+    if (!selectedClass) return;
+    updateData({
+      ...data,
+      studentSortModeByClass: {
+        ...data.studentSortModeByClass,
+        [selectedClass.id]: mode
+      },
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  function moveStudentInCustomOrder(studentId: string, direction: "up" | "down") {
+    if (!selectedClass) return;
+
+    const orderedIds = displayedStudents.map((student) => student.id);
+    const currentIndex = orderedIds.indexOf(studentId);
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= orderedIds.length) return;
+
+    const nextIds = [...orderedIds];
+    [nextIds[currentIndex], nextIds[targetIndex]] = [nextIds[targetIndex], nextIds[currentIndex]];
+
+    updateData({
+      ...data,
+      studentOrderByClass: {
+        ...data.studentOrderByClass,
+        [selectedClass.id]: nextIds
+      },
+      updatedAt: new Date().toISOString()
+    });
+    notify("Urutan siswa diperbarui.");
+  }
+
   async function exportDailyForSelectedClasses() {
     const classIds = exportClasses.map((item) => item.id);
     if (classIds.length === 0 || !selectedSchedule) {
@@ -274,6 +461,61 @@ function App() {
     );
     notify(`Rekap bulanan ${classIds.length} kelas berhasil didownload.`);
   }
+
+  async function checkForUpdates() {
+    setUpdateState({
+      status: "checking",
+      message: "Mengecek release terbaru di GitHub..."
+    });
+
+    try {
+      const response = await fetch(GITHUB_LATEST_RELEASE_URL, {
+        headers: {
+          Accept: "application/vnd.github+json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub mengembalikan status ${response.status}.`);
+      }
+
+      const release = (await response.json()) as GithubRelease;
+      const latestVersion = normalizeVersion(release.tag_name);
+      const hasUpdate = compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
+      const asset = selectInstallerAsset(release.assets);
+
+      if (!hasUpdate) {
+        setUpdateState({
+          status: "current",
+          message: `Aplikasi sudah versi terbaru (${CURRENT_APP_VERSION}).`,
+          release,
+          asset
+        });
+        notify("Aplikasi sudah versi terbaru.", "info");
+        return;
+      }
+
+      setUpdateState({
+        status: "available",
+        message: `Update ${release.tag_name} tersedia. Download installer untuk memperbarui aplikasi.`,
+        release,
+        asset
+      });
+      notify(`Update ${release.tag_name} tersedia.`, "info");
+    } catch (error) {
+      setUpdateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Gagal mengecek update."
+      });
+      notify("Gagal mengecek update dari GitHub.", "error");
+    }
+  }
+
+  const saveHeaderProps = {
+    lastSavedAt,
+    onSave: handleSaveNow,
+    saveStatus
+  };
 
   return (
     <div className="app-shell">
@@ -315,6 +557,7 @@ function App() {
             <PageHeader
               title="Dashboard"
               description="Ringkasan data lokal dan pintasan kerja operator absensi."
+              {...saveHeaderProps}
             />
             <div className="metric-grid">
               <MetricCard label="Kelas" value={data.classes.length} />
@@ -343,6 +586,7 @@ function App() {
             <PageHeader
               title="Input Absensi"
               description="Isi absensi per siswa dan per jam pelajaran. Slot pemisah tidak dihitung absensi."
+              {...saveHeaderProps}
             />
             <div className="toolbar-card">
               <label>
@@ -387,6 +631,7 @@ function App() {
             <PageHeader
               title="Data Siswa"
               description="Tambah siswa manual atau import Excel dengan kolom nama_siswa dan kelas."
+              {...saveHeaderProps}
             />
             <div className="split-grid">
               <div className="workspace-card">
@@ -461,7 +706,7 @@ function App() {
               </div>
             </div>
 
-            <div className="toolbar-card compact">
+            <div className="toolbar-card student-toolbar">
               <label>
                 Tampilkan kelas
                 <ClassSelect
@@ -470,38 +715,32 @@ function App() {
                   onValueChange={setSelectedClassId}
                 />
               </label>
+              <label>
+                Urutkan
+                <StudentSortSelect value={studentSortMode} onValueChange={updateStudentSortMode} />
+              </label>
               <span className="toolbar-summary">{selectedStudents.length} siswa di {selectedClass.name}</span>
             </div>
 
-            <DataTable
-              headers={["Nama", "NIS", "Kelas", "Catatan", ""]}
-              rows={selectedStudents.map((student) => [
-                student.name,
-                student.nis ?? "-",
-                data.classes.find((item) => item.id === student.classId)?.name ?? "-",
-                student.note ?? "-",
-                <Button
-                  className="text-destructive"
-                  key={student.id}
-                  size="icon"
-                  variant="outline"
-                  type="button"
-                  title="Hapus siswa"
-                  onClick={() => {
-                    updateData(deleteStudent(data, student.id));
-                    notify(`${student.name} dihapus dari data siswa.`);
-                  }}
-                >
-                  <Trash2 />
-                </Button>
-              ])}
+            <StudentDataTable
+              students={displayedStudents}
+              sortMode={studentSortMode}
+              onMove={moveStudentInCustomOrder}
+              onDelete={(student) => {
+                updateData(deleteStudent(data, student.id));
+                notify(`${student.name} dihapus dari data siswa.`);
+              }}
             />
           </section>
         )}
 
         {activeView === "classes" && (
           <section className="view-stack">
-            <PageHeader title="Data Kelas" description="Kelola daftar kelas yang dipakai untuk input absensi." />
+            <PageHeader
+              title="Data Kelas"
+              description="Kelola daftar kelas yang dipakai untuk input absensi."
+              {...saveHeaderProps}
+            />
             <div className="toolbar-card compact">
               <Input
                 placeholder="Nama kelas, contoh: Kelas 3B"
@@ -539,6 +778,7 @@ function App() {
             <PageHeader
               title="Pengaturan Jam"
               description="Buat pola jam yang bisa dipilih saat input absensi, termasuk slot pemisah seperti istirahat."
+              {...saveHeaderProps}
             />
             <div className="toolbar-card compact">
               <Input
@@ -641,6 +881,7 @@ function App() {
             <PageHeader
               title="Rekap & Export"
               description="Export rekap harian atau bulanan ke Excel untuk arsip dan laporan sekolah."
+              {...saveHeaderProps}
             />
             <div className="workspace-card">
               <div className="section-title-row">
@@ -745,7 +986,50 @@ function App() {
             <PageHeader
               title="Pengaturan"
               description="Backup, restore, dan reset data lokal aplikasi."
+              {...saveHeaderProps}
             />
+            <div className="workspace-card update-card">
+              <div>
+                <Badge variant="outline">Versi {CURRENT_APP_VERSION}</Badge>
+                <h2>Check for Update</h2>
+                <p className="muted-text">{updateState.message}</p>
+                {updateState.release && (
+                  <p className="update-meta">
+                    Latest release: {updateState.release.tag_name}
+                    {updateState.release.published_at
+                      ? ` - ${new Date(updateState.release.published_at).toLocaleDateString("id-ID")}`
+                      : ""}
+                  </p>
+                )}
+              </div>
+              <div className="update-actions">
+                <Button disabled={updateState.status === "checking"} type="button" onClick={checkForUpdates}>
+                  <RefreshCw data-icon="inline-start" />
+                  {updateState.status === "checking" ? "Checking..." : "Check for Update"}
+                </Button>
+                {updateState.status === "available" && updateState.asset && (
+                  <Button type="button" variant="outline" onClick={() => openExternalDownload(updateState.asset!.browser_download_url)}>
+                    <Download data-icon="inline-start" />
+                    Download & Install Update
+                  </Button>
+                )}
+                {updateState.release && (
+                  <Button type="button" variant="ghost" onClick={() => openExternalDownload(updateState.release!.html_url)}>
+                    <ExternalLink data-icon="inline-start" />
+                    Buka Release
+                  </Button>
+                )}
+              </div>
+              {updateState.status === "available" && !updateState.asset && (
+                <p className="inline-message error">
+                  Update ditemukan, tapi installer untuk perangkat ini belum tersedia di release tersebut.
+                </p>
+              )}
+              <p className="update-note">
+                Catatan: instal otomatis penuh membutuhkan Tauri updater dan signature release. Saat ini tombol update
+                membuka installer resmi dari GitHub Releases.
+              </p>
+            </div>
             <div className="split-grid">
               <div className="workspace-card">
                 <DatabaseBackup size={26} />
@@ -852,17 +1136,60 @@ function ScheduleSelect({
   );
 }
 
-function PageHeader({ title, description }: { title: string; description: string }) {
+function StudentSortSelect({
+  value,
+  onValueChange
+}: {
+  value: StudentSortMode;
+  onValueChange: (value: StudentSortMode) => void;
+}) {
+  return (
+    <Select value={value} onValueChange={(nextValue) => onValueChange(nextValue as StudentSortMode)}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Pilih urutan" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value="az">Nama A-Z</SelectItem>
+          <SelectItem value="custom">Custom order</SelectItem>
+          <SelectItem value="male-first">Laki-laki dulu, A-Z</SelectItem>
+          <SelectItem value="female-first">Perempuan dulu, A-Z</SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function PageHeader({
+  title,
+  description,
+  lastSavedAt,
+  onSave,
+  saveStatus
+}: {
+  title: string;
+  description: string;
+  lastSavedAt: string;
+  onSave: () => void;
+  saveStatus: SaveStatus;
+}) {
   return (
     <header className="page-header">
       <div>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
-      <Badge className="local-badge" variant="outline">
-        <Save data-icon="inline-start" />
-        Offline
-      </Badge>
+      <div className="page-actions">
+        <div className="save-status" aria-live="polite">
+          <CheckCircle2 size={16} />
+          <span>{saveStatus === "saving" ? "Menyimpan..." : "Tersimpan"}</span>
+          <small>Terakhir {formatSavedTime(lastSavedAt)}</small>
+        </div>
+        <Button type="button" variant="outline" onClick={onSave}>
+          <Save data-icon="inline-start" />
+          Simpan
+        </Button>
+      </div>
     </header>
   );
 }
@@ -985,6 +1312,89 @@ function AttendanceGrid({
       </Table>
       {students.length === 0 && <div className="empty-state">Belum ada siswa di kelas ini.</div>}
     </div>
+  );
+}
+
+function StudentDataTable({
+  students,
+  sortMode,
+  onMove,
+  onDelete
+}: {
+  students: Student[];
+  sortMode: StudentSortMode;
+  onMove: (studentId: string, direction: "up" | "down") => void;
+  onDelete: (student: Student) => void;
+}) {
+  return (
+    <Card className="data-table-wrap student-table-card">
+      <Table className="data-table student-data-table">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="number-col">No</TableHead>
+            <TableHead>Nama Siswa</TableHead>
+            <TableHead>NIS</TableHead>
+            <TableHead>Jenis Kelamin</TableHead>
+            <TableHead>Catatan</TableHead>
+            <TableHead className="order-col">Urutan</TableHead>
+            <TableHead className="action-col">Aksi</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {students.map((student, index) => (
+            <TableRow key={student.id}>
+              <TableCell className="number-cell">{index + 1}</TableCell>
+              <TableCell className="student-name-cell">
+                <strong>{student.name}</strong>
+              </TableCell>
+              <TableCell>{student.nis ?? "-"}</TableCell>
+              <TableCell>{student.gender?.trim() || "-"}</TableCell>
+              <TableCell className="note-cell">{student.note ?? "-"}</TableCell>
+              <TableCell>
+                <div className="order-actions">
+                  <Button
+                    disabled={sortMode !== "custom" || index === 0}
+                    size="icon-sm"
+                    variant="outline"
+                    type="button"
+                    title="Naikkan urutan"
+                    onClick={() => onMove(student.id, "up")}
+                  >
+                    <ArrowUp />
+                  </Button>
+                  <Button
+                    disabled={sortMode !== "custom" || index === students.length - 1}
+                    size="icon-sm"
+                    variant="outline"
+                    type="button"
+                    title="Turunkan urutan"
+                    onClick={() => onMove(student.id, "down")}
+                  >
+                    <ArrowDown />
+                  </Button>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  className="text-destructive"
+                  size="icon-sm"
+                  variant="outline"
+                  type="button"
+                  title="Hapus siswa"
+                  onClick={() => onDelete(student)}
+                >
+                  <Trash2 />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {students.length === 0 && <div className="empty-state">Belum ada siswa di kelas ini.</div>}
+      {sortMode === "custom" && students.length > 0 && (
+        <p className="table-helper">Gunakan panah naik/turun untuk menyamakan urutan dengan format absen sekolah.</p>
+      )}
+    </Card>
   );
 }
 

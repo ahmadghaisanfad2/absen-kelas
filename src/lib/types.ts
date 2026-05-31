@@ -6,6 +6,8 @@ export type AttendanceStatus =
   | "duty"
   | "other";
 
+export type StudentSortMode = "az" | "custom" | "male-first" | "female-first";
+
 export type AttendanceRecordKey = `${string}:${string}:${string}:${string}`;
 
 export interface ClassGroup {
@@ -50,6 +52,8 @@ export interface AttendanceRecord {
 export interface AppData {
   classes: ClassGroup[];
   students: Student[];
+  studentOrderByClass: Record<string, string[]>;
+  studentSortModeByClass: Record<string, StudentSortMode>;
   schedulePatterns: SchedulePattern[];
   attendance: Record<AttendanceRecordKey, AttendanceRecord>;
   activeSchedulePatternId: string;
