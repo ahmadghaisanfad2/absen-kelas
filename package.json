@@ -1,6 +1,6 @@
 {
   "name": "absen-kelas",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Aplikasi desktop offline untuk input dan rekap absensi siswa per jam pelajaran.",
   "type": "module",
   "license": "MIT",
