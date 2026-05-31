@@ -128,19 +128,40 @@ export function createStudentTemplateWorkbook() {
 
 export function createDailyWorkbook(data: AppData, date: string, classId: string, scheduleId: string) {
   const workbook = new ExcelJS.Workbook();
+  addDailyWorksheet(workbook, data, date, classId, scheduleId);
+  return workbook;
+}
+
+export function createDailyWorkbookForClasses(data: AppData, date: string, classIds: string[], scheduleId: string) {
+  const workbook = new ExcelJS.Workbook();
+  classIds.forEach((classId) => addDailyWorksheet(workbook, data, date, classId, scheduleId));
+  return workbook;
+}
+
+function addDailyWorksheet(workbook: ExcelJS.Workbook, data: AppData, date: string, classId: string, scheduleId: string) {
   const rows = buildDailyRows(data, date, classId, scheduleId);
-  const sheet = workbook.addWorksheet("Rekap Harian");
+  const sheet = workbook.addWorksheet(sheetName(classNameById(data.classes, classId), workbook.worksheets.length));
   const headers = rows[0] ? Object.keys(rows[0]) : ["nama_siswa", "nis"];
   sheet.columns = headers.map((header) => ({ header, key: header, width: Math.max(14, header.length + 4) }));
   sheet.addRows(rows);
   sheet.getRow(1).font = { bold: true };
-  return workbook;
 }
 
 export function createMonthlyWorkbook(data: AppData, monthKey: string, classId: string) {
   const workbook = new ExcelJS.Workbook();
+  addMonthlyWorksheet(workbook, data, monthKey, classId);
+  return workbook;
+}
+
+export function createMonthlyWorkbookForClasses(data: AppData, monthKey: string, classIds: string[]) {
+  const workbook = new ExcelJS.Workbook();
+  classIds.forEach((classId) => addMonthlyWorksheet(workbook, data, monthKey, classId));
+  return workbook;
+}
+
+function addMonthlyWorksheet(workbook: ExcelJS.Workbook, data: AppData, monthKey: string, classId: string) {
   const rows = buildMonthlyRows(data, monthKey, classId);
-  const sheet = workbook.addWorksheet("Rekap Bulanan");
+  const sheet = workbook.addWorksheet(sheetName(classNameById(data.classes, classId), workbook.worksheets.length));
   sheet.columns = [
     { header: "nama_siswa", key: "nama_siswa", width: 28 },
     { header: "nis", key: "nis", width: 14 },
@@ -154,7 +175,6 @@ export function createMonthlyWorkbook(data: AppData, monthKey: string, classId: 
   ];
   sheet.addRows(rows);
   sheet.getRow(1).font = { bold: true };
-  return workbook;
 }
 
 export async function downloadWorkbook(workbook: ExcelJS.Workbook, fileName: string) {
@@ -176,4 +196,23 @@ export function dailyFileName(data: AppData, date: string, classId: string) {
 
 export function monthlyFileName(data: AppData, monthKey: string, classId: string) {
   return `rekap-bulanan-${classNameById(data.classes, classId).replace(/\s+/g, "-").toLowerCase()}-${monthKey}.xlsx`;
+}
+
+export function dailyFileNameForClasses(data: AppData, date: string, classIds: string[]) {
+  return `rekap-harian-${classSelectionSlug(data, classIds)}-${date}.xlsx`;
+}
+
+export function monthlyFileNameForClasses(data: AppData, monthKey: string, classIds: string[]) {
+  return `rekap-bulanan-${classSelectionSlug(data, classIds)}-${monthKey}.xlsx`;
+}
+
+function classSelectionSlug(data: AppData, classIds: string[]) {
+  if (classIds.length === data.classes.length) return "semua-kelas";
+  if (classIds.length === 1) return classNameById(data.classes, classIds[0]).replace(/\s+/g, "-").toLowerCase();
+  return `${classIds.length}-kelas`;
+}
+
+function sheetName(name: string, index: number) {
+  const cleanName = name.replace(/[\\/?*\[\]:]/g, " ").trim() || `Kelas ${index + 1}`;
+  return cleanName.slice(0, 31);
 }
