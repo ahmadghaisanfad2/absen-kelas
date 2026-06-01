@@ -15,6 +15,7 @@ export function loadAppData(): AppData {
     return {
       ...seedData,
       ...parsed,
+      institutionName: parsed.institutionName ?? seedData.institutionName,
       studentOrderByClass: parsed.studentOrderByClass ?? {},
       studentSortModeByClass: parsed.studentSortModeByClass ?? {},
       attendance: parsed.attendance ?? {}
@@ -61,6 +62,7 @@ export function parseBackupPayload(payload: string): AppData {
   return {
     ...seedData,
     ...parsed.data,
+    institutionName: parsed.data.institutionName ?? seedData.institutionName,
     studentOrderByClass: parsed.data.studentOrderByClass ?? {},
     studentSortModeByClass: parsed.data.studentSortModeByClass ?? {},
     attendance: parsed.data.attendance ?? {}

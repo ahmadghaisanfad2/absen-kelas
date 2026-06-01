@@ -103,6 +103,43 @@ export function addClass(data: AppData, name: string): AppData {
   };
 }
 
+export function updateClassName(data: AppData, classId: string, name: string): AppData {
+  const cleanName = name.trim();
+  if (!cleanName) return data;
+
+  const duplicate = data.classes.some(
+    (item) => item.id !== classId && item.name.toLowerCase() === cleanName.toLowerCase()
+  );
+  if (duplicate) return data;
+
+  return {
+    ...data,
+    classes: data.classes.map((item) => (item.id === classId ? { ...item, name: cleanName } : item)),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function deleteClassGroup(data: AppData, classId: string): AppData {
+  const deletedStudentIds = new Set(data.students.filter((student) => student.classId === classId).map((student) => student.id));
+  const attendance = Object.fromEntries(
+    Object.entries(data.attendance).filter(
+      ([, record]) => record.classId !== classId && !deletedStudentIds.has(record.studentId)
+    )
+  ) as AppData["attendance"];
+  const { [classId]: _deletedOrder, ...studentOrderByClass } = data.studentOrderByClass;
+  const { [classId]: _deletedSortMode, ...studentSortModeByClass } = data.studentSortModeByClass;
+
+  return {
+    ...data,
+    classes: data.classes.filter((item) => item.id !== classId),
+    students: data.students.filter((student) => student.classId !== classId),
+    studentOrderByClass,
+    studentSortModeByClass,
+    attendance,
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export function addStudent(
   data: AppData,
   input: Pick<Student, "name" | "classId" | "nis" | "gender" | "note">
@@ -123,6 +160,30 @@ export function addStudent(
         note: input.note?.trim() || undefined
       }
     ],
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function updateStudent(data: AppData, studentId: string, input: Partial<Pick<Student, "name" | "nis" | "gender" | "note">>): AppData {
+  const current = data.students.find((student) => student.id === studentId);
+  if (!current) return data;
+
+  const cleanName = input.name?.trim() ?? current.name;
+  if (!cleanName) return data;
+
+  return {
+    ...data,
+    students: data.students.map((student) =>
+      student.id === studentId
+        ? {
+            ...student,
+            name: cleanName,
+            nis: input.nis?.trim() || undefined,
+            gender: input.gender?.trim() || undefined,
+            note: input.note?.trim() || undefined
+          }
+        : student
+    ),
     updatedAt: new Date().toISOString()
   };
 }

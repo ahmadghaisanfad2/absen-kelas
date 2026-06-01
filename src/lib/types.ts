@@ -50,6 +50,7 @@ export interface AttendanceRecord {
 }
 
 export interface AppData {
+  institutionName?: string;
   classes: ClassGroup[];
   students: Student[];
   studentOrderByClass: Record<string, string[]>;

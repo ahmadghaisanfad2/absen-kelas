@@ -35,11 +35,14 @@ import {
   addStudent,
   attendanceRecordKey,
   buildMonthlyRows,
+  deleteClassGroup,
   deleteStudent,
   markAllPresent,
   studentsForClass,
   trackedSlots,
+  updateClassName,
   updateSchedulePattern,
+  updateStudent,
   upsertAttendanceRecord
 } from "./lib/attendance";
 import { monthKeyFromDate, todayIso, formatIndonesianDate } from "./lib/dates";
@@ -265,6 +268,7 @@ function App() {
   const filledToday = Object.values(data.attendance).filter(
     (record) => record.date === selectedDate && record.classId === selectedClass?.id
   ).length;
+  const institutionName = data.institutionName?.trim() || "Nama sekolah belum diatur";
 
   function updateData(nextData: AppData) {
     setData(nextData);
@@ -433,6 +437,61 @@ function App() {
     notify("Urutan siswa diperbarui.");
   }
 
+  function handleInstitutionNameChange(name: string) {
+    updateData({
+      ...data,
+      institutionName: name,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  function handleUpdateClassName(classGroup: ClassGroup, name: string) {
+    const cleanName = name.trim();
+    if (!cleanName) {
+      notify("Nama kelas tidak boleh kosong.", "error");
+      return;
+    }
+    if (cleanName === classGroup.name) return;
+
+    const duplicate = data.classes.some(
+      (item) => item.id !== classGroup.id && item.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    if (duplicate) {
+      notify(`Kelas ${cleanName} sudah ada.`, "error");
+      return;
+    }
+
+    updateData(updateClassName(data, classGroup.id, cleanName));
+    notify(`Nama kelas diperbarui menjadi ${cleanName}.`);
+  }
+
+  function handleDeleteClass(classGroup: ClassGroup) {
+    const studentCount = data.students.filter((student) => student.classId === classGroup.id).length;
+    const confirmed = window.confirm(
+      `Hapus ${classGroup.name}?\n\nPeringatan: seluruh ${studentCount} siswa di kelas ini dan semua data absensinya akan ikut terhapus. Aksi ini tidak bisa dibatalkan kecuali dari backup.`
+    );
+
+    if (!confirmed) return;
+
+    const nextData = deleteClassGroup(data, classGroup.id);
+    updateData(nextData);
+    if (selectedClassId === classGroup.id) {
+      setSelectedClassId(nextData.classes[0]?.id ?? "");
+    }
+    notify(`${classGroup.name} dan ${studentCount} siswa di dalamnya dihapus.`);
+  }
+
+  function handleUpdateStudentDetails(student: Student, nextStudent: Pick<Student, "name" | "nis" | "gender" | "note">) {
+    const cleanName = nextStudent.name.trim();
+    if (!cleanName) {
+      notify("Nama siswa tidak boleh kosong.", "error");
+      return;
+    }
+
+    updateData(updateStudent(data, student.id, nextStudent));
+    notify(`Data ${cleanName} diperbarui.`);
+  }
+
   async function exportDailyForSelectedClasses() {
     const classIds = exportClasses.map((item) => item.id);
     if (classIds.length === 0 || !selectedSchedule) {
@@ -524,6 +583,7 @@ function App() {
           <img className="brand-mark" src={appLogoUrl} alt="" aria-hidden="true" />
           <div>
             <strong>Absen Kelas</strong>
+            <small>{institutionName}</small>
           </div>
         </div>
 
@@ -556,7 +616,7 @@ function App() {
           <section className="view-stack">
             <PageHeader
               title="Dashboard"
-              description="Ringkasan data lokal dan pintasan kerja operator absensi."
+              description={`Ringkasan data ${institutionName} dan pintasan kerja operator absensi.`}
               {...saveHeaderProps}
             />
             <div className="metric-grid">
@@ -726,6 +786,7 @@ function App() {
               students={displayedStudents}
               sortMode={studentSortMode}
               onMove={moveStudentInCustomOrder}
+              onSave={handleUpdateStudentDetails}
               onDelete={(student) => {
                 updateData(deleteStudent(data, student.id));
                 notify(`${student.name} dihapus dari data siswa.`);
@@ -763,12 +824,11 @@ function App() {
                 Tambah Kelas
               </Button>
             </div>
-            <DataTable
-              headers={["Nama Kelas", "Jumlah Siswa"]}
-              rows={data.classes.map((item) => [
-                item.name,
-                data.students.filter((student) => student.classId === item.id).length.toString()
-              ])}
+            <ClassDataTable
+              classes={data.classes}
+              students={data.students}
+              onDelete={handleDeleteClass}
+              onRename={handleUpdateClassName}
             />
           </section>
         )}
@@ -988,6 +1048,20 @@ function App() {
               description="Backup, restore, dan reset data lokal aplikasi."
               {...saveHeaderProps}
             />
+            <div className="workspace-card">
+              <h2>Identitas Lembaga</h2>
+              <p className="muted-text">
+                Isi nama sekolah, pesantren, atau lembaga agar tampilan aplikasi terasa milik institusi sendiri.
+              </p>
+              <label className="settings-field">
+                Nama lembaga / sekolah
+                <Input
+                  placeholder="Contoh: Pondok Pesantren Nurul Ilmi"
+                  value={data.institutionName ?? ""}
+                  onChange={(event) => handleInstitutionNameChange(event.target.value)}
+                />
+              </label>
+            </div>
             <div className="workspace-card update-card">
               <div>
                 <Badge variant="outline">Versi {CURRENT_APP_VERSION}</Badge>
@@ -1319,13 +1393,27 @@ function StudentDataTable({
   students,
   sortMode,
   onMove,
+  onSave,
   onDelete
 }: {
   students: Student[];
   sortMode: StudentSortMode;
   onMove: (studentId: string, direction: "up" | "down") => void;
+  onSave: (student: Student, nextStudent: Pick<Student, "name" | "nis" | "gender" | "note">) => void;
   onDelete: (student: Student) => void;
 }) {
+  function saveFromRow(student: Student, row: HTMLTableRowElement) {
+    const fields = Object.fromEntries(
+      Array.from(row.querySelectorAll<HTMLInputElement>("input[name]")).map((input) => [input.name, input.value])
+    );
+    onSave(student, {
+      name: String(fields.name ?? ""),
+      nis: String(fields.nis ?? ""),
+      gender: String(fields.gender ?? ""),
+      note: String(fields.note ?? "")
+    });
+  }
+
   return (
     <Card className="data-table-wrap student-table-card">
       <Table className="data-table student-data-table">
@@ -1345,13 +1433,60 @@ function StudentDataTable({
             <TableRow key={student.id}>
               <TableCell className="number-cell">{index + 1}</TableCell>
               <TableCell className="student-name-cell">
-                <strong>{student.name}</strong>
+                <form
+                  className="editable-row-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveFromRow(student, event.currentTarget.closest("tr")!);
+                  }}
+                >
+                  <Input name="name" defaultValue={student.name} aria-label={`Nama ${student.name}`} />
+                </form>
               </TableCell>
-              <TableCell>{student.nis ?? "-"}</TableCell>
-              <TableCell>{student.gender?.trim() || "-"}</TableCell>
-              <TableCell className="note-cell">{student.note ?? "-"}</TableCell>
+              <TableCell>
+                <form
+                  className="editable-row-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveFromRow(student, event.currentTarget.closest("tr")!);
+                  }}
+                >
+                  <Input name="nis" defaultValue={student.nis ?? ""} aria-label={`NIS ${student.name}`} />
+                </form>
+              </TableCell>
+              <TableCell>
+                <form
+                  className="editable-row-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveFromRow(student, event.currentTarget.closest("tr")!);
+                  }}
+                >
+                  <Input name="gender" defaultValue={student.gender ?? ""} aria-label={`Jenis kelamin ${student.name}`} />
+                </form>
+              </TableCell>
+              <TableCell className="note-cell">
+                <form
+                  className="editable-row-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveFromRow(student, event.currentTarget.closest("tr")!);
+                  }}
+                >
+                  <Input name="note" defaultValue={student.note ?? ""} aria-label={`Catatan ${student.name}`} />
+                </form>
+              </TableCell>
               <TableCell>
                 <div className="order-actions">
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    type="button"
+                    title="Simpan perubahan siswa"
+                    onClick={(event) => saveFromRow(student, event.currentTarget.closest("tr")!)}
+                  >
+                    <Save />
+                  </Button>
                   <Button
                     disabled={sortMode !== "custom" || index === 0}
                     size="icon-sm"
@@ -1391,9 +1526,78 @@ function StudentDataTable({
         </TableBody>
       </Table>
       {students.length === 0 && <div className="empty-state">Belum ada siswa di kelas ini.</div>}
+      {students.length > 0 && (
+        <p className="table-helper">Edit data siswa langsung di tabel, lalu klik ikon simpan pada baris tersebut.</p>
+      )}
       {sortMode === "custom" && students.length > 0 && (
         <p className="table-helper">Gunakan panah naik/turun untuk menyamakan urutan dengan format absen sekolah.</p>
       )}
+    </Card>
+  );
+}
+
+function ClassDataTable({
+  classes,
+  students,
+  onRename,
+  onDelete
+}: {
+  classes: ClassGroup[];
+  students: Student[];
+  onRename: (classGroup: ClassGroup, name: string) => void;
+  onDelete: (classGroup: ClassGroup) => void;
+}) {
+  return (
+    <Card className="data-table-wrap class-table-card">
+      <Table className="data-table">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nama Kelas</TableHead>
+            <TableHead>Jumlah Siswa</TableHead>
+            <TableHead className="action-col">Aksi</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {classes.map((classGroup) => {
+            const studentCount = students.filter((student) => student.classId === classGroup.id).length;
+            return (
+              <TableRow key={classGroup.id}>
+                <TableCell>
+                  <Input
+                    defaultValue={classGroup.name}
+                    aria-label={`Nama kelas ${classGroup.name}`}
+                    onBlur={(event) => onRename(classGroup, event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        onRename(classGroup, event.currentTarget.value);
+                        event.currentTarget.blur();
+                      }
+                    }}
+                  />
+                </TableCell>
+                <TableCell>{studentCount} siswa</TableCell>
+                <TableCell>
+                  <Button
+                    className="text-destructive"
+                    size="icon-sm"
+                    variant="outline"
+                    type="button"
+                    title={`Hapus ${classGroup.name}`}
+                    onClick={() => onDelete(classGroup)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {classes.length === 0 && <div className="empty-state">Belum ada kelas. Tambahkan kelas untuk mulai input siswa.</div>}
+      <p className="table-helper">
+        Edit nama kelas langsung di tabel. Menghapus kelas akan meminta konfirmasi karena semua siswa di kelas itu ikut terhapus.
+      </p>
     </Card>
   );
 }

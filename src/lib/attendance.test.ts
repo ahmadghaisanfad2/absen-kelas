@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markAllPresent, upsertAttendanceRecord, buildMonthlyRows } from "./attendance";
+import { buildMonthlyRows, deleteClassGroup, markAllPresent, updateClassName, updateStudent, upsertAttendanceRecord } from "./attendance";
 import { seedData } from "./seed";
 
 describe("attendance helpers", () => {
@@ -25,5 +25,32 @@ describe("attendance helpers", () => {
     const monthlyRows = buildMonthlyRows(editedData, "2026-06", "class_1a");
     expect(monthlyRows[0].tugas_piket).toBe(1);
     expect(monthlyRows[0].hadir).toBe(6);
+  });
+
+  it("renames classes and students", () => {
+    const renamedClass = updateClassName(seedData, "class_1a", "Kelas 1 Putra");
+    const renamedStudent = updateStudent(renamedClass, "student_ahmad", {
+      name: "Ahmad F.",
+      nis: "1001A",
+      gender: "Laki-laki",
+      note: "Ketua kelas"
+    });
+
+    expect(renamedStudent.classes.find((item) => item.id === "class_1a")?.name).toBe("Kelas 1 Putra");
+    expect(renamedStudent.students.find((item) => item.id === "student_ahmad")).toMatchObject({
+      name: "Ahmad F.",
+      nis: "1001A",
+      note: "Ketua kelas"
+    });
+  });
+
+  it("deletes a class with its students, attendance, order, and sort settings", () => {
+    const deletedData = deleteClassGroup(seedData, "class_1a");
+
+    expect(deletedData.classes.some((item) => item.id === "class_1a")).toBe(false);
+    expect(deletedData.students.some((student) => student.classId === "class_1a")).toBe(false);
+    expect(Object.values(deletedData.attendance).some((record) => record.classId === "class_1a")).toBe(false);
+    expect(deletedData.studentOrderByClass.class_1a).toBeUndefined();
+    expect(deletedData.studentSortModeByClass.class_1a).toBeUndefined();
   });
 });
