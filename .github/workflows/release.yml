@@ -52,6 +52,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           args: ${{ matrix.args }}
           tagName: ${{ github.ref_name }}
@@ -59,6 +60,8 @@ jobs:
           releaseBody: "Offline desktop build for Absen Kelas."
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')

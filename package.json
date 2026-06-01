@@ -1,6 +1,6 @@
 {
   "name": "absen-kelas",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Aplikasi desktop offline untuk input dan rekap absensi siswa per jam pelajaran.",
   "type": "module",
   "license": "MIT",
@@ -14,6 +14,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",
     "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Absen Kelas",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "identifier": "id.opensource.absenkelas",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -36,5 +36,13 @@
     ],
     "shortDescription": "Input dan rekap absensi siswa per jam pelajaran.",
     "longDescription": "Absen Kelas membantu operator sekolah merekap absensi siswa dari buku absen fisik ke laporan digital tanpa backend dan tanpa biaya server."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyRTQ2MzE0MUVENkFEOUIKUldTYnJkWWVGR1BrUWxVc0pvaUdEcUVuV05EVEh1WDFkUTVSYzVIbDA4dkxCQ01OUUhpcG5XclkK",
+      "endpoints": [
+        "https://github.com/ahmadghaisanfad2/absen-kelas/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

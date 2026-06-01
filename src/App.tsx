@@ -19,6 +19,9 @@ import {
   Upload,
   Users
 } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { check, type DownloadEvent } from "@tauri-apps/plugin-updater";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import packageJson from "../package.json";
 import appLogoUrl from "./assets/app-logo-ui.png";
@@ -64,7 +67,7 @@ import type { AppData, AttendanceStatus, ClassGroup, LessonSlot, SchedulePattern
 type ViewKey = "dashboard" | "attendance" | "students" | "classes" | "schedules" | "exports" | "settings";
 type ToastKind = "success" | "error" | "info";
 type SaveStatus = "saving" | "saved";
-type UpdateCheckStatus = "idle" | "checking" | "available" | "current" | "error";
+type UpdateCheckStatus = "idle" | "checking" | "available" | "installing" | "current" | "error";
 type GithubReleaseAsset = { name: string; browser_download_url: string };
 type GithubRelease = {
   tag_name: string;
@@ -190,8 +193,15 @@ function selectInstallerAsset(assets: GithubReleaseAsset[]) {
   return assets.find((asset) => asset.name.endsWith(".dmg") || asset.name.endsWith(".exe") || asset.name.endsWith(".msi"));
 }
 
-function openExternalDownload(url: string) {
-  window.open(url, "_blank", "noopener,noreferrer");
+async function openExternalDownload(url: string) {
+  try {
+    await openUrl(url);
+  } catch {
+    const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+    if (!openedWindow) {
+      window.location.assign(url);
+    }
+  }
 }
 
 function App() {
@@ -556,7 +566,7 @@ function App() {
 
       setUpdateState({
         status: "available",
-        message: `Update ${release.tag_name} tersedia. Download installer untuk memperbarui aplikasi.`,
+        message: `Update ${release.tag_name} tersedia. Klik Install Update untuk memperbarui aplikasi dari dalam app.`,
         release,
         asset
       });
@@ -567,6 +577,79 @@ function App() {
         message: error instanceof Error ? error.message : "Gagal mengecek update."
       });
       notify("Gagal mengecek update dari GitHub.", "error");
+    }
+  }
+
+  async function installAvailableUpdate() {
+    setUpdateState((current) => ({
+      ...current,
+      status: "installing",
+      message: "Menyiapkan update otomatis..."
+    }));
+
+    try {
+      const update = await check();
+
+      if (!update) {
+        setUpdateState((current) => ({
+          ...current,
+          status: "current",
+          message: `Aplikasi sudah versi terbaru (${CURRENT_APP_VERSION}).`
+        }));
+        notify("Aplikasi sudah versi terbaru.", "info");
+        return;
+      }
+
+      let downloadedBytes = 0;
+      let totalBytes = 0;
+      const updateProgressMessage = (event: DownloadEvent) => {
+        if (event.event === "Started") {
+          totalBytes = event.data.contentLength ?? 0;
+          downloadedBytes = 0;
+          setUpdateState((current) => ({
+            ...current,
+            status: "installing",
+            message: "Mengunduh update..."
+          }));
+        }
+
+        if (event.event === "Progress") {
+          downloadedBytes += event.data.chunkLength;
+          const percentage = totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
+          setUpdateState((current) => ({
+            ...current,
+            status: "installing",
+            message: percentage > 0 ? `Mengunduh update... ${percentage}%` : "Mengunduh update..."
+          }));
+        }
+
+        if (event.event === "Finished") {
+          setUpdateState((current) => ({
+            ...current,
+            status: "installing",
+            message: "Update selesai diunduh. Menginstall..."
+          }));
+        }
+      };
+
+      await update.downloadAndInstall(updateProgressMessage);
+      setUpdateState((current) => ({
+        ...current,
+        status: "installing",
+        message: "Update berhasil diinstall. Aplikasi akan dibuka ulang..."
+      }));
+      notify("Update berhasil diinstall. Aplikasi akan dibuka ulang.", "success");
+      await relaunch();
+    } catch (error) {
+      setUpdateState((current) => ({
+        ...current,
+        status: "error",
+        message:
+          error instanceof Error
+            ? `Instal otomatis gagal: ${error.message}`
+            : "Instal otomatis gagal. Silakan download installer manual."
+      }));
+      notify("Instal otomatis gagal. Coba download installer manual.", "error");
     }
   }
 
@@ -1077,18 +1160,34 @@ function App() {
                 )}
               </div>
               <div className="update-actions">
-                <Button disabled={updateState.status === "checking"} type="button" onClick={checkForUpdates}>
+                <Button disabled={updateState.status === "checking" || updateState.status === "installing"} type="button" onClick={checkForUpdates}>
                   <RefreshCw data-icon="inline-start" />
                   {updateState.status === "checking" ? "Checking..." : "Check for Update"}
                 </Button>
                 {updateState.status === "available" && updateState.asset && (
-                  <Button type="button" variant="outline" onClick={() => openExternalDownload(updateState.asset!.browser_download_url)}>
+                  <Button type="button" variant="outline" onClick={installAvailableUpdate}>
                     <Download data-icon="inline-start" />
-                    Download & Install Update
+                    Install Update
+                  </Button>
+                )}
+                {updateState.asset && (
+                  <Button
+                    disabled={updateState.status === "installing"}
+                    type="button"
+                    variant="outline"
+                    onClick={() => void openExternalDownload(updateState.asset!.browser_download_url)}
+                  >
+                    <Download data-icon="inline-start" />
+                    Download Installer
                   </Button>
                 )}
                 {updateState.release && (
-                  <Button type="button" variant="ghost" onClick={() => openExternalDownload(updateState.release!.html_url)}>
+                  <Button
+                    disabled={updateState.status === "installing"}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => void openExternalDownload(updateState.release!.html_url)}
+                  >
                     <ExternalLink data-icon="inline-start" />
                     Buka Release
                   </Button>
@@ -1100,8 +1199,8 @@ function App() {
                 </p>
               )}
               <p className="update-note">
-                Catatan: instal otomatis penuh membutuhkan Tauri updater dan signature release. Saat ini tombol update
-                membuka installer resmi dari GitHub Releases.
+                Catatan: update otomatis aktif mulai versi ini. Jika perangkat menolak instal otomatis, gunakan Download
+                Installer dari GitHub Releases.
               </p>
             </div>
             <div className="split-grid">

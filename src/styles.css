@@ -65,11 +65,17 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 1024px;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 button,
@@ -90,14 +96,18 @@ button:disabled {
 .app-shell {
   display: grid;
   grid-template-columns: 252px minmax(0, 1fr);
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  min-height: 0;
   padding: 22px 16px;
+  overflow-y: auto;
   background: #0f1f1c;
   color: #f8fafc;
 }
@@ -174,6 +184,7 @@ button:disabled {
 
 .main-panel {
   min-width: 0;
+  min-height: 0;
   padding: 28px;
   overflow: auto;
 }
@@ -817,6 +828,7 @@ thead .sticky-col {
 
   .app-shell {
     grid-template-columns: 1fr;
+    height: 100%;
   }
 
   .sidebar {
