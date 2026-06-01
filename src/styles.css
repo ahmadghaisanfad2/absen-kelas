@@ -572,6 +572,18 @@ select:focus {
   min-width: 120px;
 }
 
+.inline-select {
+  width: 100%;
+  min-width: 88px;
+  min-height: 38px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  font-weight: 650;
+}
+
 .table-helper {
   margin: 0;
   padding: 12px 14px;

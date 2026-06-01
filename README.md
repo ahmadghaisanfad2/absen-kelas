@@ -107,8 +107,8 @@ Repo ini sudah menyiapkan GitHub Actions di `.github/workflows/release.yml`.
 Cara release:
 
 ```bash
-git tag v0.1.11
-git push origin v0.1.11
+git tag v0.1.12
+git push origin v0.1.12
 ```
 
 GitHub Actions akan membangun installer macOS dan Windows, menerbitkan release publik, lalu memakai

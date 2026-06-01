@@ -32,7 +32,7 @@ describe("attendance helpers", () => {
     const renamedStudent = updateStudent(renamedClass, "student_ahmad", {
       name: "Ahmad F.",
       nis: "1001A",
-      gender: "Laki-laki",
+      gender: "L",
       note: "Ketua kelas"
     });
 
@@ -40,6 +40,7 @@ describe("attendance helpers", () => {
     expect(renamedStudent.students.find((item) => item.id === "student_ahmad")).toMatchObject({
       name: "Ahmad F.",
       nis: "1001A",
+      gender: "L",
       note: "Ketua kelas"
     });
   });

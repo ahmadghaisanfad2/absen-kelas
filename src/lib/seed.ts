@@ -9,11 +9,11 @@ export const seedData: AppData = {
     { id: "class_2a", name: "Kelas 2A", description: "Contoh kelas awal" }
   ],
   students: [
-    { id: "student_ahmad", name: "Ahmad Fauzan", classId: "class_1a", nis: "1001", gender: "Laki-laki" },
-    { id: "student_aisyah", name: "Aisyah Rahma", classId: "class_1a", nis: "1002", gender: "Perempuan" },
-    { id: "student_bilal", name: "Bilal Hannan", classId: "class_1a", nis: "1003", gender: "Laki-laki" },
-    { id: "student_nadia", name: "Nadia Zahra", classId: "class_2a", nis: "2001", gender: "Perempuan" },
-    { id: "student_zaki", name: "Zaki Mubarak", classId: "class_2a", nis: "2002", gender: "Laki-laki" }
+    { id: "student_ahmad", name: "Ahmad Fauzan", classId: "class_1a", nis: "1001", gender: "L" },
+    { id: "student_aisyah", name: "Aisyah Rahma", classId: "class_1a", nis: "1002", gender: "P" },
+    { id: "student_bilal", name: "Bilal Hannan", classId: "class_1a", nis: "1003", gender: "L" },
+    { id: "student_nadia", name: "Nadia Zahra", classId: "class_2a", nis: "2001", gender: "P" },
+    { id: "student_zaki", name: "Zaki Mubarak", classId: "class_2a", nis: "2002", gender: "L" }
   ],
   studentOrderByClass: {
     class_1a: ["student_ahmad", "student_aisyah", "student_bilal"],

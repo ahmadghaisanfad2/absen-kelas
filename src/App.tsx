@@ -82,6 +82,7 @@ type UpdateState = {
   release?: GithubRelease;
   asset?: GithubReleaseAsset;
 };
+type GenderCode = "L" | "P";
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -111,6 +112,10 @@ function normalizeGender(value?: string) {
   if (["l", "lk", "laki", "laki-laki", "putra", "ikhwan", "male"].includes(normalized)) return "male";
   if (["p", "pr", "perempuan", "putri", "akhwat", "female"].includes(normalized)) return "female";
   return "unknown";
+}
+
+function genderCodeFromValue(value?: string): GenderCode {
+  return normalizeGender(value) === "female" ? "P" : "L";
 }
 
 function compareStudentsByName(first: Student, second: Student) {
@@ -210,7 +215,7 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [selectedClassId, setSelectedClassId] = useState(data.classes[0]?.id ?? "");
   const [selectedScheduleId, setSelectedScheduleId] = useState(data.activeSchedulePatternId);
-  const [studentForm, setStudentForm] = useState({ name: "", nis: "", gender: "", note: "" });
+  const [studentForm, setStudentForm] = useState({ name: "", nis: "", gender: "L", note: "" });
   const [className, setClassName] = useState("");
   const [scheduleName, setScheduleName] = useState("");
   const [importMessage, setImportMessage] = useState("");
@@ -795,10 +800,9 @@ function App() {
                     value={selectedClass.id}
                     onValueChange={setSelectedClassId}
                   />
-                  <Input
-                    placeholder="Jenis kelamin (opsional)"
+                  <GenderSelect
                     value={studentForm.gender}
-                    onChange={(event) => setStudentForm({ ...studentForm, gender: event.target.value })}
+                    onValueChange={(gender) => setStudentForm({ ...studentForm, gender })}
                   />
                   <Input
                     className="span-2"
@@ -815,7 +819,7 @@ function App() {
                       return;
                     }
                     updateData(addStudent(data, { ...studentForm, classId: selectedClass.id }));
-                    setStudentForm({ name: "", nis: "", gender: "", note: "" });
+                    setStudentForm({ name: "", nis: "", gender: "L", note: "" });
                     notify(`Siswa ditambahkan ke ${selectedClass.name}.`);
                   }}
                 >
@@ -1282,6 +1286,28 @@ function ClassSelect({
   );
 }
 
+function GenderSelect({
+  value,
+  onValueChange
+}: {
+  value: string;
+  onValueChange: (value: GenderCode) => void;
+}) {
+  return (
+    <Select value={genderCodeFromValue(value)} onValueChange={(nextValue) => onValueChange(nextValue as GenderCode)}>
+      <SelectTrigger aria-label="Jenis kelamin">
+        <SelectValue placeholder="Jenis kelamin" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value="L">L</SelectItem>
+          <SelectItem value="P">P</SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+}
+
 function ScheduleSelect({
   schedules,
   value,
@@ -1503,12 +1529,15 @@ function StudentDataTable({
 }) {
   function saveFromRow(student: Student, row: HTMLTableRowElement) {
     const fields = Object.fromEntries(
-      Array.from(row.querySelectorAll<HTMLInputElement>("input[name]")).map((input) => [input.name, input.value])
+      Array.from(row.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input[name], select[name]")).map((input) => [
+        input.name,
+        input.value
+      ])
     );
     onSave(student, {
       name: String(fields.name ?? ""),
       nis: String(fields.nis ?? ""),
-      gender: String(fields.gender ?? ""),
+      gender: genderCodeFromValue(String(fields.gender ?? student.gender)),
       note: String(fields.note ?? "")
     });
   }
@@ -1561,7 +1590,15 @@ function StudentDataTable({
                     saveFromRow(student, event.currentTarget.closest("tr")!);
                   }}
                 >
-                  <Input name="gender" defaultValue={student.gender ?? ""} aria-label={`Jenis kelamin ${student.name}`} />
+                  <select
+                    className="inline-select"
+                    name="gender"
+                    defaultValue={genderCodeFromValue(student.gender)}
+                    aria-label={`Jenis kelamin ${student.name}`}
+                  >
+                    <option value="L">L</option>
+                    <option value="P">P</option>
+                  </select>
                 </form>
               </TableCell>
               <TableCell className="note-cell">

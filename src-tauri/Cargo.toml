@@ -1,6 +1,6 @@
 [package]
 name = "absen-kelas"
-version = "0.1.11"
+version = "0.1.12"
 description = "Aplikasi desktop offline untuk input dan rekap absensi siswa."
 authors = ["Absen Kelas Maintainers"]
 license = "MIT"
