@@ -107,11 +107,13 @@ Repo ini sudah menyiapkan GitHub Actions di `.github/workflows/release.yml`.
 Cara release:
 
 ```bash
-git tag v0.1.4
-git push origin v0.1.4
+git tag v0.1.9
+git push origin v0.1.9
 ```
 
-GitHub Actions akan membangun draft release untuk macOS dan Windows.
+GitHub Actions akan membangun installer macOS dan Windows, menerbitkan release publik, lalu memakai
+`docs/release-notes-vX.Y.Z.md` sebagai update log. Pastikan file release notes dibuat sebelum tag
+dipush supaya user bisa langsung melihat perubahan dan download asset terbaru.
 
 ## Roadmap Singkat
 
