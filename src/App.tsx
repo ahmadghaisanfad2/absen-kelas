@@ -5,8 +5,11 @@ import {
   DatabaseBackup,
   Download,
   ExternalLink,
+  FileJson,
   FileSpreadsheet,
+  FolderOpen,
   GraduationCap,
+  HardDrive,
   ArrowDown,
   ArrowUp,
   LayoutDashboard,
@@ -19,6 +22,7 @@ import {
   Upload,
   Users
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent } from "@tauri-apps/plugin-updater";
@@ -61,7 +65,15 @@ import {
 } from "./lib/excel";
 import { makeId } from "./lib/ids";
 import { ATTENDANCE_STATUS_OPTIONS, statusLabel } from "./lib/status";
-import { createBackupPayload, loadAppData, parseBackupPayload, resetAppData, saveAppData } from "./lib/storage";
+import {
+  backupFileNameForDate,
+  buildStorageInfo,
+  createBackupPayload,
+  loadAppData,
+  parseBackupPayload,
+  resetAppData,
+  saveAppData
+} from "./lib/storage";
 import type { AppData, AttendanceStatus, ClassGroup, LessonSlot, SchedulePattern, Student, StudentSortMode } from "./lib/types";
 
 type ViewKey = "dashboard" | "attendance" | "students" | "classes" | "schedules" | "exports" | "settings";
@@ -222,6 +234,7 @@ function App() {
   const [exportClassIds, setExportClassIds] = useState<string[]>(() => data.classes.map((item) => item.id));
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [lastSavedAt, setLastSavedAt] = useState(data.updatedAt);
+  const [dataDirectory, setDataDirectory] = useState("");
   const [updateState, setUpdateState] = useState<UpdateState>({
     status: "idle",
     message: "Cek release terbaru dari GitHub saat perangkat terhubung internet."
@@ -239,6 +252,22 @@ function App() {
 
     return () => window.clearTimeout(timer);
   }, [data]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    invoke<string>("get_app_data_dir")
+      .then((directory) => {
+        if (isMounted) setDataDirectory(directory);
+      })
+      .catch(() => {
+        if (isMounted) setDataDirectory("");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     setExportClassIds((current) => {
@@ -284,6 +313,7 @@ function App() {
     (record) => record.date === selectedDate && record.classId === selectedClass?.id
   ).length;
   const institutionName = data.institutionName?.trim() || "Nama sekolah belum diatur";
+  const storageInfo = useMemo(() => buildStorageInfo(dataDirectory), [dataDirectory]);
 
   function updateData(nextData: AppData) {
     setData(nextData);
@@ -336,6 +366,21 @@ function App() {
 
       window.setTimeout(() => notice.remove(), 3600);
     }, 0);
+  }
+
+  function downloadBackup() {
+    downloadTextFile(backupFileNameForDate(todayIso()), createBackupPayload(data));
+    notify("Backup data JSON berhasil didownload.");
+  }
+
+  async function openAppDataDirectory() {
+    try {
+      const directory = await invoke<string>("open_app_data_dir");
+      setDataDirectory(directory);
+      notify("Folder data aplikasi dibuka.");
+    } catch {
+      notify("Folder data hanya bisa dibuka dari aplikasi desktop.", "error");
+    }
   }
 
   function handleMarkAllPresent() {
@@ -1207,18 +1252,56 @@ function App() {
                 Installer dari GitHub Releases.
               </p>
             </div>
+            <div className="workspace-card storage-card">
+              <div className="storage-card-heading">
+                <HardDrive size={26} />
+                <div>
+                  <h2>Lokasi Data Tersimpan</h2>
+                  <p className="muted-text">
+                    Data kerja tersimpan otomatis di perangkat ini. Backup manual bisa didownload sebagai file JSON
+                    yang mudah dipindahkan atau disimpan di cloud.
+                  </p>
+                </div>
+              </div>
+              <div className="storage-info-grid">
+                <div className="storage-info-item">
+                  <span>Format data utama</span>
+                  <strong>{storageInfo.storageType}</strong>
+                  <small>Dipakai aplikasi untuk auto-save harian.</small>
+                </div>
+                <div className="storage-info-item">
+                  <span>Key internal</span>
+                  <code>{storageInfo.storageKey}</code>
+                  <small>Bukan file yang perlu diedit manual.</small>
+                </div>
+                <div className="storage-info-item wide">
+                  <span>Folder data aplikasi</span>
+                  <code>{storageInfo.dataDirectory || "Tersedia saat dibuka dari aplikasi desktop."}</code>
+                  <small>Di macOS akan terbuka di Finder, di Windows akan terbuka di File Explorer.</small>
+                </div>
+                <div className="storage-info-item">
+                  <span>Backup manual</span>
+                  <strong>{storageInfo.backupFormat}</strong>
+                  <code>{storageInfo.backupFileExample}</code>
+                </div>
+              </div>
+              <div className="button-row">
+                <Button disabled={!dataDirectory} type="button" variant="outline" onClick={openAppDataDirectory}>
+                  <FolderOpen data-icon="inline-start" />
+                  Buka Folder Data
+                </Button>
+                <Button type="button" onClick={downloadBackup}>
+                  <FileJson data-icon="inline-start" />
+                  Download Backup JSON
+                </Button>
+              </div>
+            </div>
             <div className="split-grid">
               <div className="workspace-card">
                 <DatabaseBackup size={26} />
                 <h2>Backup Data</h2>
                 <p className="muted-text">Simpan semua data kelas, siswa, pola jam, dan absensi ke file JSON.</p>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    downloadTextFile(`backup-absen-kelas-${todayIso()}.json`, createBackupPayload(data));
-                    notify("Backup data berhasil didownload.");
-                  }}
-                >
+                <Button type="button" onClick={downloadBackup}>
                   <Download data-icon="inline-start" />
                   Download Backup
                 </Button>

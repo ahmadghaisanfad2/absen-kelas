@@ -1,7 +1,22 @@
 import { seedData } from "./seed";
 import type { AppData } from "./types";
 
-const STORAGE_KEY = "absen-kelas:v1";
+export const STORAGE_KEY = "absen-kelas:v1";
+export const BACKUP_FORMAT = "JSON";
+
+export function backupFileNameForDate(date: string) {
+  return `backup-absen-kelas-${date}.json`;
+}
+
+export function buildStorageInfo(dataDirectory = "") {
+  return {
+    storageType: "Penyimpanan lokal aplikasi",
+    storageKey: STORAGE_KEY,
+    backupFormat: BACKUP_FORMAT,
+    backupFileExample: backupFileNameForDate("2026-06-01"),
+    dataDirectory
+  };
+}
 
 export function loadAppData(): AppData {
   const raw = window.localStorage.getItem(STORAGE_KEY);
