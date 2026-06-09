@@ -12,7 +12,8 @@ describe("attendance helpers", () => {
   });
 
   it("allows a specific student slot to be edited after hadir semua", () => {
-    const presentData = markAllPresent(seedData, "2026-06-01", "class_1a", "schedule_regular");
+    const baseData = { ...seedData, attendance: {} };
+    const presentData = markAllPresent(baseData, "2026-06-01", "class_1a", "schedule_regular");
     const editedData = upsertAttendanceRecord(presentData, {
       date: "2026-06-01",
       classId: "class_1a",

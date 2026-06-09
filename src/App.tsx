@@ -781,7 +781,7 @@ function App() {
               description="Isi absensi per siswa dan per jam pelajaran. Slot pemisah tidak dihitung absensi."
               {...saveHeaderProps}
             />
-            <div className="toolbar-card">
+            <div className="toolbar-card attendance-toolbar">
               <label>
                 Tanggal
                 <Input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
