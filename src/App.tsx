@@ -12,6 +12,7 @@ import {
   HardDrive,
   ArrowDown,
   ArrowUp,
+  ArrowUpDown,
   LayoutDashboard,
   Plus,
   RefreshCw,
@@ -45,6 +46,7 @@ import {
   deleteClassGroup,
   deleteStudent,
   markAllPresent,
+  sortClassGroupsByName,
   studentsForClass,
   trackedSlots,
   updateClassName,
@@ -541,6 +543,11 @@ function App() {
     notify(`${classGroup.name} dan ${studentCount} siswa di dalamnya dihapus.`);
   }
 
+  function sortClassesByName() {
+    updateData(sortClassGroupsByName(data));
+    notify("Urutan kelas diperbarui berdasarkan nama.");
+  }
+
   function handleUpdateStudentDetails(student: Student, nextStudent: Pick<Student, "name" | "nis" | "gender" | "note">) {
     const cleanName = nextStudent.name.trim();
     if (!cleanName) {
@@ -826,8 +833,8 @@ function App() {
               description="Tambah siswa manual atau import Excel dengan kolom nama_siswa dan kelas."
               {...saveHeaderProps}
             />
-            <div className="split-grid">
-              <div className="workspace-card">
+            <div className="split-grid student-entry-grid">
+              <div className="workspace-card student-form-card">
                 <h2>Tambah Siswa</h2>
                 <div className="form-grid">
                   <Input
@@ -856,24 +863,26 @@ function App() {
                     onChange={(event) => setStudentForm({ ...studentForm, note: event.target.value })}
                   />
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (!studentForm.name.trim()) {
-                      notify("Nama siswa wajib diisi.", "error");
-                      return;
-                    }
-                    updateData(addStudent(data, { ...studentForm, classId: selectedClass.id }));
-                    setStudentForm({ name: "", nis: "", gender: "L", note: "" });
-                    notify(`Siswa ditambahkan ke ${selectedClass.name}.`);
-                  }}
-                >
-                  <Plus data-icon="inline-start" />
-                  Tambah Siswa
-                </Button>
+                <div className="form-actions">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!studentForm.name.trim()) {
+                        notify("Nama siswa wajib diisi.", "error");
+                        return;
+                      }
+                      updateData(addStudent(data, { ...studentForm, classId: selectedClass.id }));
+                      setStudentForm({ name: "", nis: "", gender: "L", note: "" });
+                      notify(`Siswa ditambahkan ke ${selectedClass.name}.`);
+                    }}
+                  >
+                    <Plus data-icon="inline-start" />
+                    Tambah Siswa
+                  </Button>
+                </div>
               </div>
 
-              <div className="workspace-card">
+              <div className="workspace-card student-import-card">
                 <h2>Import Excel</h2>
                 <p className="muted-text">Gunakan template agar format kolom konsisten.</p>
                 <div className="button-row">
@@ -934,7 +943,7 @@ function App() {
               description="Kelola daftar kelas yang dipakai untuk input absensi."
               {...saveHeaderProps}
             />
-            <div className="toolbar-card compact">
+            <div className="toolbar-card compact class-toolbar">
               <Input
                 placeholder="Nama kelas, contoh: Kelas 3B"
                 value={className}
@@ -955,6 +964,10 @@ function App() {
                 <Plus data-icon="inline-start" />
                 Tambah Kelas
               </Button>
+              <Button disabled={data.classes.length < 2} variant="outline" type="button" onClick={sortClassesByName}>
+                <ArrowUpDown data-icon="inline-start" />
+                Urutkan Nama Kelas
+              </Button>
             </div>
             <ClassDataTable
               classes={data.classes}
@@ -972,7 +985,7 @@ function App() {
               description="Buat pola jam yang bisa dipilih saat input absensi, termasuk slot pemisah seperti istirahat."
               {...saveHeaderProps}
             />
-            <div className="toolbar-card compact">
+            <div className="toolbar-card compact schedule-toolbar">
               <Input
                 placeholder="Nama pola baru, contoh: Ramadhan"
                 value={scheduleName}
@@ -985,7 +998,9 @@ function App() {
                     notify("Nama pola jam wajib diisi.", "error");
                     return;
                   }
-                  updateData(addSchedulePattern(data, scheduleName));
+                  const nextData = addSchedulePattern(data, scheduleName);
+                  updateData(nextData);
+                  setSelectedScheduleId(nextData.activeSchedulePatternId);
                   notify(`Pola jam ${scheduleName.trim()} ditambahkan.`);
                   setScheduleName("");
                 }}
@@ -994,7 +1009,7 @@ function App() {
                 Tambah Pola
               </Button>
             </div>
-            <div className="workspace-card">
+            <div className="workspace-card schedule-card">
               <div className="section-title-row">
                 <label>
                   Pola aktif

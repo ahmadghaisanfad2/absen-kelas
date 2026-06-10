@@ -360,6 +360,7 @@ button:disabled {
 .workspace-card h2 {
   margin: 0 0 8px;
   font-size: 18px;
+  font-weight: 780;
   line-height: 1.2;
 }
 
@@ -488,6 +489,40 @@ button:disabled {
   align-items: center;
 }
 
+.class-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) auto auto;
+  justify-content: start;
+  padding: 14px 16px;
+}
+
+.schedule-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) auto;
+  justify-content: start;
+  padding: 14px 16px;
+}
+
+.class-table-card {
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(16, 31, 28, 0.07);
+}
+
+.class-table-card th {
+  background: #f4f8f6;
+  color: #4d5d6f;
+  box-shadow: inset 0 -1px #d2dfda;
+}
+
+.class-table-card tbody tr:hover {
+  background: #fbfdfc;
+}
+
+.class-table-card td:nth-child(2) {
+  color: var(--app-muted);
+  font-weight: 720;
+}
+
 .attendance-toolbar {
   display: grid;
   grid-template-columns: minmax(150px, 180px) minmax(150px, 190px) minmax(150px, 190px) auto;
@@ -606,11 +641,31 @@ input::placeholder {
   gap: 14px;
 }
 
+.student-entry-grid {
+  align-items: stretch;
+}
+
+.student-form-card,
+.student-import-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 14px 0;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: auto;
+}
+
+.student-import-card .button-row {
+  margin-top: auto;
 }
 
 .span-2 {
@@ -629,17 +684,19 @@ input::placeholder {
 }
 
 .toolbar-summary {
-  align-self: end;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
   color: var(--app-muted);
   font-size: 13px;
-  font-weight: 700;
-  padding-bottom: 10px;
+  font-weight: 750;
 }
 
 .student-toolbar {
   display: grid;
   grid-template-columns: minmax(210px, 260px) minmax(230px, 320px) minmax(160px, 1fr);
   align-items: end;
+  padding: 14px 16px;
 }
 
 .attendance-table-wrap,
@@ -713,11 +770,19 @@ input::placeholder {
 
 .student-table-card {
   overflow: hidden;
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(16, 31, 28, 0.07);
 }
 
 .student-data-table th,
 .student-data-table td {
   padding: 12px 14px;
+}
+
+.student-data-table th {
+  background: #f4f8f6;
+  color: #4d5d6f;
+  box-shadow: inset 0 -1px #d2dfda;
 }
 
 .student-data-table tbody tr:hover {
@@ -765,6 +830,7 @@ input::placeholder {
 .editable-row-form input {
   width: 100%;
   min-width: 120px;
+  background: #ffffff;
 }
 
 .inline-select {
@@ -783,7 +849,7 @@ input::placeholder {
   margin: 0;
   padding: 12px 14px;
   border-top: 1px solid var(--border);
-  background: #fbfdfc;
+  background: #f8fbf9;
   color: var(--app-muted);
   font-size: 12px;
   font-weight: 650;
@@ -919,28 +985,52 @@ thead .sticky-col {
   margin-bottom: 14px;
 }
 
+.schedule-card {
+  display: grid;
+  gap: 14px;
+}
+
+.schedule-card .section-title-row {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-card .section-title-row label {
+  width: min(360px, 100%);
+}
+
 .slot-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .slot-row {
   display: grid;
-  grid-template-columns: 40px minmax(180px, 1fr) 150px 40px;
+  grid-template-columns: 44px minmax(220px, 1fr) 160px 40px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.slot-row:hover {
+  border-color: var(--border-strong);
+  background: #ffffff;
 }
 
 .slot-number {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border-radius: 7px;
-  background: var(--surface-soft);
+  background: var(--accent);
   color: var(--accent-strong);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .toggle-row {
@@ -949,6 +1039,8 @@ thead .sticky-col {
   gap: 8px;
   color: var(--text);
   font-size: 13px;
+  font-weight: 760;
+  white-space: nowrap;
 }
 
 .toggle-row input {
@@ -1111,6 +1203,15 @@ thead .sticky-col {
 
   .attendance-toolbar {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .class-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-toolbar,
+  .slot-row {
+    grid-template-columns: 1fr;
   }
 
   .attendance-toolbar [data-slot="button"] {

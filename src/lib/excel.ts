@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { makeId } from "./ids";
 import type { AppData, ImportResult, StudentImportRow } from "./types";
-import { buildDailyRows, buildMonthlyRows, classNameById } from "./attendance";
+import { buildDailyRows, buildMonthlyRows, classNameById, sortClassGroupsByName } from "./attendance";
 
 function normalizeCell(value: unknown) {
   return String(value ?? "").trim();
@@ -97,13 +97,15 @@ export function importStudents(data: AppData, rows: StudentImportRow[]): { data:
     importedStudents += 1;
   });
 
+  const nextData = sortClassGroupsByName({
+    ...data,
+    classes: nextClasses,
+    students: nextStudents,
+    updatedAt: new Date().toISOString()
+  });
+
   return {
-    data: {
-      ...data,
-      classes: nextClasses,
-      students: nextStudents,
-      updatedAt: new Date().toISOString()
-    },
+    data: nextData,
     result: { importedStudents, createdClasses, skippedRows, errors }
   };
 }

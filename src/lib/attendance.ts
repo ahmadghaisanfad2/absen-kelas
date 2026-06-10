@@ -31,6 +31,18 @@ export function studentsForClass(students: Student[], classId: string) {
     .sort((a, b) => a.name.localeCompare(b.name, "id-ID"));
 }
 
+function compareClassGroupsByName(a: ClassGroup, b: ClassGroup) {
+  return a.name.localeCompare(b.name, "id-ID", { numeric: true, sensitivity: "base" });
+}
+
+export function sortClassGroupsByName(data: AppData): AppData {
+  return {
+    ...data,
+    classes: [...data.classes].sort(compareClassGroupsByName),
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export function markAllPresent(data: AppData, date: string, classId: string, scheduleId: string): AppData {
   const schedule = data.schedulePatterns.find((item) => item.id === scheduleId);
   if (!schedule) return data;
@@ -98,7 +110,7 @@ export function addClass(data: AppData, name: string): AppData {
 
   return {
     ...data,
-    classes: [...data.classes, { id: makeId("class"), name: cleanName }],
+    classes: [...data.classes, { id: makeId("class"), name: cleanName }].sort(compareClassGroupsByName),
     updatedAt: new Date().toISOString()
   };
 }
@@ -114,7 +126,9 @@ export function updateClassName(data: AppData, classId: string, name: string): A
 
   return {
     ...data,
-    classes: data.classes.map((item) => (item.id === classId ? { ...item, name: cleanName } : item)),
+    classes: data.classes
+      .map((item) => (item.id === classId ? { ...item, name: cleanName } : item))
+      .sort(compareClassGroupsByName),
     updatedAt: new Date().toISOString()
   };
 }

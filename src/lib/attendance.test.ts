@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildMonthlyRows, deleteClassGroup, markAllPresent, updateClassName, updateStudent, upsertAttendanceRecord } from "./attendance";
+import {
+  addClass,
+  buildMonthlyRows,
+  deleteClassGroup,
+  markAllPresent,
+  sortClassGroupsByName,
+  updateClassName,
+  updateStudent,
+  upsertAttendanceRecord
+} from "./attendance";
 import { seedData } from "./seed";
 
 describe("attendance helpers", () => {
@@ -44,6 +53,37 @@ describe("attendance helpers", () => {
       gender: "L",
       note: "Ketua kelas"
     });
+  });
+
+  it("sorts class groups in natural school order", () => {
+    const unorderedData = {
+      ...seedData,
+      classes: [
+        { id: "class_2a", name: "Kelas 2A" },
+        { id: "class_1a", name: "Kelas 1A" },
+        { id: "class_10a", name: "Kelas 10A" },
+        { id: "class_1b", name: "Kelas 1B" }
+      ]
+    };
+
+    const sortedData = sortClassGroupsByName(unorderedData);
+
+    expect(sortedData.classes.map((item) => item.name)).toEqual([
+      "Kelas 1A",
+      "Kelas 1B",
+      "Kelas 2A",
+      "Kelas 10A"
+    ]);
+  });
+
+  it("keeps newly added classes in natural order", () => {
+    const dataWithInsertedClass = addClass(seedData, "Kelas 1B");
+
+    expect(dataWithInsertedClass.classes.map((item) => item.name)).toEqual([
+      "Kelas 1A",
+      "Kelas 1B",
+      "Kelas 2A"
+    ]);
   });
 
   it("deletes a class with its students, attendance, order, and sort settings", () => {

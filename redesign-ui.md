@@ -375,7 +375,7 @@ Expected: same behavior as before, only visually improved.
 
 Goal: make student management feel like a mature admin table, not a raw form dump.
 
-- [ ] **Step 1: Polish add/import panels**
+- [x] **Step 1: Polish add/import panels**
 
 Improve the two `.workspace-card` panels in Data Siswa:
 
@@ -386,7 +386,7 @@ Improve the two `.workspace-card` panels in Data Siswa:
 
 Expected: manual add, template download, and Excel import still use the same handlers.
 
-- [ ] **Step 2: Improve student toolbar**
+- [x] **Step 2: Improve student toolbar**
 
 Refine `.student-toolbar`:
 
@@ -396,7 +396,7 @@ Refine `.student-toolbar`:
 
 Expected: class filtering and sort mode still work.
 
-- [ ] **Step 3: Polish `StudentDataTable`**
+- [x] **Step 3: Polish `StudentDataTable`**
 
 Improve:
 
@@ -408,7 +408,7 @@ Improve:
 
 Expected: inline edit, save, custom ordering, and delete behavior remain unchanged.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Manual check:
 
@@ -421,6 +421,12 @@ Manual check:
 
 Expected: same behavior as before.
 
+Additional completed scope:
+
+- [x] Ignore Tauri-generated local files: `src-tauri/Cargo.lock` and `src-tauri/gen`.
+- [x] Add natural class ordering so `Kelas 1A`, `Kelas 1B`, `Kelas 2A`, and `Kelas 10A` sort in school-friendly order.
+- [x] Add a Data Kelas action to re-sort existing classes by name.
+
 ---
 
 ## Task 7: Data Kelas And Pengaturan Jam
@@ -431,7 +437,7 @@ Expected: same behavior as before.
 
 Goal: make configuration screens feel organized while keeping them lightweight.
 
-- [ ] **Step 1: Polish Data Kelas toolbar and table**
+- [x] **Step 1: Polish Data Kelas toolbar and table**
 
 Improve:
 
@@ -442,7 +448,7 @@ Improve:
 
 Expected: adding, renaming, and deleting classes still call existing handlers.
 
-- [ ] **Step 2: Polish Pengaturan Jam toolbar**
+- [x] **Step 2: Polish Pengaturan Jam toolbar**
 
 Improve:
 
@@ -453,7 +459,7 @@ Improve:
 
 Expected: schedule pattern creation and selection remain unchanged.
 
-- [ ] **Step 3: Polish slot rows**
+- [x] **Step 3: Polish slot rows**
 
 Improve `.slot-list`, `.slot-row`, `.slot-number`, and `.toggle-row`:
 
@@ -464,7 +470,7 @@ Improve `.slot-list`, `.slot-row`, `.slot-number`, and `.toggle-row`:
 
 Expected: adding, renaming, toggling, and deleting slots still work.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Manual check:
 
@@ -477,6 +483,11 @@ Manual check:
 - Delete slot.
 
 Expected: same behavior as before.
+
+Additional completed scope:
+
+- [x] Keep Data Kelas ordering action available from the toolbar.
+- [x] Ensure a newly added schedule pattern becomes the active visible pattern immediately after creation.
 
 ---
 
