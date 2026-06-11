@@ -28,10 +28,10 @@ import {
   Upload,
   Users
 } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { check, type DownloadEvent } from "@tauri-apps/plugin-updater";
+import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import packageJson from "../package.json";
 import appLogoUrl from "./assets/app-logo-ui.png";
@@ -101,6 +101,7 @@ type UpdateState = {
   message: string;
   release?: GithubRelease;
   asset?: GithubReleaseAsset;
+  nativeUpdate?: Update;
 };
 type GenderCode = "L" | "P";
 
@@ -116,6 +117,20 @@ const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboar
 
 const GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/ahmadghaisanfad2/absen-kelas/releases/latest";
 const CURRENT_APP_VERSION = packageJson.version;
+
+async function fetchLatestGithubRelease() {
+  const response = await fetch(GITHUB_LATEST_RELEASE_URL, {
+    headers: {
+      Accept: "application/vnd.github+json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub mengembalikan status ${response.status}.`);
+  }
+
+  return (await response.json()) as GithubRelease;
+}
 
 function downloadTextFile(fileName: string, content: string) {
   const blob = new Blob([content], { type: "application/json" });
@@ -601,17 +616,7 @@ function App() {
     });
 
     try {
-      const response = await fetch(GITHUB_LATEST_RELEASE_URL, {
-        headers: {
-          Accept: "application/vnd.github+json"
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`GitHub mengembalikan status ${response.status}.`);
-      }
-
-      const release = (await response.json()) as GithubRelease;
+      const release = await fetchLatestGithubRelease();
       const latestVersion = normalizeVersion(release.tag_name);
       const hasUpdate = compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
       const asset = selectInstallerAsset(release.assets);
@@ -627,13 +632,38 @@ function App() {
         return;
       }
 
+      if (!isTauri()) {
+        setUpdateState({
+          status: "available",
+          message: `Update ${release.tag_name} tersedia. Buka aplikasi desktop untuk install otomatis, atau download installer manual.`,
+          release,
+          asset
+        });
+        notify(`Update ${release.tag_name} tersedia.`, "info");
+        return;
+      }
+
+      const nativeUpdate = await check();
+
+      if (!nativeUpdate) {
+        setUpdateState({
+          status: "available",
+          message: `Update ${release.tag_name} tersedia, tapi updater otomatis belum menemukan paket yang cocok untuk perangkat ini. Gunakan Download Installer sebagai fallback.`,
+          release,
+          asset
+        });
+        notify(`Update ${release.tag_name} tersedia, tetapi install otomatis belum tersedia untuk perangkat ini.`, "info");
+        return;
+      }
+
       setUpdateState({
         status: "available",
-        message: `Update ${release.tag_name} tersedia. Klik Install Update untuk memperbarui aplikasi dari dalam app.`,
+        message: `Update ${nativeUpdate.version} tersedia. Klik Install Update untuk memperbarui aplikasi dari dalam app.`,
         release,
-        asset
+        asset,
+        nativeUpdate
       });
-      notify(`Update ${release.tag_name} tersedia.`, "info");
+      notify(`Update ${nativeUpdate.version} tersedia.`, "info");
     } catch (error) {
       setUpdateState({
         status: "error",
@@ -651,7 +681,11 @@ function App() {
     }));
 
     try {
-      const update = await check();
+      if (!isTauri()) {
+        throw new Error("Install otomatis hanya tersedia di aplikasi desktop.");
+      }
+
+      const update = updateState.nativeUpdate ?? (await check());
 
       if (!update) {
         setUpdateState((current) => ({
