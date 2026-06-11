@@ -1,6 +1,10 @@
 import {
+  BarChart3,
+  BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   DatabaseBackup,
   Download,
@@ -20,6 +24,7 @@ import {
   Save,
   Settings,
   Trash2,
+  TrendingUp,
   Upload,
   Users
 } from "lucide-react";
@@ -32,10 +37,11 @@ import packageJson from "../package.json";
 import appLogoUrl from "./assets/app-logo-ui.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   addClass,
@@ -760,23 +766,143 @@ function App() {
               {...saveHeaderProps}
             />
             <div className="metric-grid">
-              <MetricCard label="Kelas" value={data.classes.length} />
-              <MetricCard label="Siswa" value={data.students.length} />
-              <MetricCard label="Pola Jam" value={data.schedulePatterns.length} />
-              <MetricCard label="Entri Hari Ini" value={filledToday} />
+              <MetricCard
+                label="Kelas"
+                value={data.classes.length}
+                description="Total kelas terdaftar"
+                icon={GraduationCap}
+                accentColor="#047052"
+              />
+              <MetricCard
+                label="Siswa"
+                value={data.students.length}
+                description="Total siswa aktif"
+                icon={Users}
+                accentColor="#2563eb"
+              />
+              <MetricCard
+                label="Pola Jam"
+                value={data.schedulePatterns.length}
+                description="Jadwal pelajaran"
+                icon={CalendarDays}
+                accentColor="#d97706"
+              />
+              <MetricCard
+                label="Entri Hari Ini"
+                value={filledToday}
+                description="Absensi tercatat"
+                icon={ClipboardCheck}
+                accentColor="#7c3aed"
+              />
             </div>
-            <div className="workspace-card hero-card">
-              <div>
-                <h2>Mulai input absensi hari ini</h2>
-                <p>
-                  Pilih kelas, pilih pola jam, klik Hadir Semua, lalu ubah status siswa yang berbeda dari buku
-                  absen.
-                </p>
+
+            <div className="dashboard-content-grid">
+              <div className="dashboard-hero-section">
+                <div className="workspace-card hero-card">
+                  <div className="hero-card-content">
+                    <div className="hero-card-badge">
+                      <TrendingUp size={14} />
+                      Mulai Kerja
+                    </div>
+                    <h2>Mulai input absensi hari ini</h2>
+                    <p>
+                      Pilih kelas, pilih pola jam, klik Hadir Semua, lalu ubah status siswa yang berbeda dari buku
+                      absen.
+                    </p>
+                    <Button type="button" size="lg" onClick={() => setActiveView("attendance")}>
+                      <ClipboardList data-icon="inline-start" />
+                      Buka Input Absensi
+                    </Button>
+                  </div>
+                  <div className="hero-card-decoration">
+                    <BarChart3 size={80} />
+                  </div>
+                </div>
+
+                <div className="quick-actions-grid">
+                  <button className="quick-action-card" type="button" onClick={() => setActiveView("students")}>
+                    <div className="quick-action-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                      <Users size={20} />
+                    </div>
+                    <strong>Kelola Siswa</strong>
+                    <span>Tambah, edit, import data siswa</span>
+                    <div className="quick-action-link">
+                      Buka <ChevronRight size={12} />
+                    </div>
+                  </button>
+                  <button className="quick-action-card" type="button" onClick={() => setActiveView("classes")}>
+                    <div className="quick-action-icon" style={{ background: "#f0fdf4", color: "#047052" }}>
+                      <GraduationCap size={20} />
+                    </div>
+                    <strong>Kelola Kelas</strong>
+                    <span>Atur daftar kelas</span>
+                    <div className="quick-action-link">
+                      Buka <ChevronRight size={12} />
+                    </div>
+                  </button>
+                  <button className="quick-action-card" type="button" onClick={() => setActiveView("exports")}>
+                    <div className="quick-action-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
+                      <FileSpreadsheet size={20} />
+                    </div>
+                    <strong>Rekap & Export</strong>
+                    <span>Export rekap ke Excel</span>
+                    <div className="quick-action-link">
+                      Buka <ChevronRight size={12} />
+                    </div>
+                  </button>
+                  <button className="quick-action-card" type="button" onClick={() => setActiveView("schedules")}>
+                    <div className="quick-action-icon" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+                      <BookOpen size={20} />
+                    </div>
+                    <strong>Atur Jadwal</strong>
+                    <span>Kelola pola jam pelajaran</span>
+                    <div className="quick-action-link">
+                      Buka <ChevronRight size={12} />
+                    </div>
+                  </button>
+                </div>
               </div>
-              <Button type="button" onClick={() => setActiveView("attendance")}>
-                <ClipboardList data-icon="inline-start" />
-                Buka Input Absensi
-              </Button>
+
+              <div className="class-overview-section">
+                <Card className="class-overview-card">
+                  <CardHeader>
+                    <CardTitle className="class-overview-title">
+                      <GraduationCap size={18} />
+                      Ringkasan Kelas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.classes.length === 0 ? (
+                      <div className="class-overview-empty">
+                        <p>Belum ada kelas.</p>
+                      </div>
+                    ) : (
+                      <div className="class-overview-list">
+                        {data.classes.map((classGroup) => {
+                          const studentCount = data.students.filter((s) => s.classId === classGroup.id).length;
+                          const attendanceCount = Object.values(data.attendance).filter(
+                            (r) => r.date === selectedDate && r.classId === classGroup.id
+                          ).length;
+                          return (
+                            <div className="class-overview-item" key={classGroup.id}>
+                              <div className="class-overview-item-header">
+                                <strong>{classGroup.name}</strong>
+                                <Badge variant="secondary">{studentCount} siswa</Badge>
+                              </div>
+                              <div className="class-overview-item-stats">
+                                <span className="class-stat">
+                                  <ClipboardCheck size={14} />
+                                  {attendanceCount} entri hari ini
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </section>
         )}
@@ -819,7 +945,7 @@ function App() {
               data={data}
               date={selectedDate}
               classId={selectedClass.id}
-              students={selectedStudents}
+              students={displayedStudents}
               schedule={selectedSchedule}
               onChange={handleAttendanceChange}
             />
@@ -1491,12 +1617,37 @@ function PageHeader({
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: number }) {
+function MetricCard({
+  label,
+  value,
+  description,
+  icon: Icon,
+  accentColor
+}: {
+  label: string;
+  value: number;
+  description: string;
+  icon: typeof LayoutDashboard;
+  accentColor: string;
+}) {
   return (
     <Card className="metric-card">
-      <CardContent>
-        <span>{label}</span>
-        <strong>{value}</strong>
+      <CardContent className="metric-card-content">
+        <div className="metric-card-header">
+          <h3 className="metric-card-label">{label}</h3>
+          <div className="metric-card-icon" style={{ background: `${accentColor}15`, color: accentColor }}>
+            <Icon size={18} />
+          </div>
+        </div>
+        <div className="metric-card-value-row">
+          <span className="metric-card-value">{value}</span>
+          <Badge variant="success-light" size="sm">
+            <TrendingUp size={12} />
+            Aktif
+          </Badge>
+        </div>
+        <Separator />
+        <p className="metric-card-description">{description}</p>
       </CardContent>
     </Card>
   );
@@ -1529,6 +1680,7 @@ function AttendanceGrid({
       <Table className="attendance-table">
         <TableHeader>
           <TableRow>
+            <TableHead className="number-col">No</TableHead>
             <TableHead className="sticky-col">Siswa</TableHead>
             {schedule.slots.map((slot) => (
               <TableHead key={slot.id} className={slot.isAttendanceTracked ? "" : "break-slot"}>
@@ -1538,8 +1690,9 @@ function AttendanceGrid({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.map((student) => (
+          {students.map((student, index) => (
             <TableRow key={student.id}>
+              <TableCell className="number-cell">{index + 1}</TableCell>
               <TableCell className="student-cell sticky-col">
                 <strong>{student.name}</strong>
                 <span>{student.nis || "Tanpa NIS"}</span>
